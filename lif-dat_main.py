@@ -35,6 +35,7 @@ class PlotCanvas(FigureCanvas):
                 QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
 
+    #TODO:Plot a weighted fitting to take error size into account
     def plot(self, delay, signal, err):
         x = delay
         y = signal
