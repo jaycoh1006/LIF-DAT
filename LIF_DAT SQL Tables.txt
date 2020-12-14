@@ -1,0 +1,53 @@
+CREATE TABLE Experiment(
+	exp_date	timestamp	NOT NULL,
+	reaction	varchar(15) NOT NULL,
+	temperature	int		NOT NULL,
+	pressure	int		NOT NULL,
+	concentration	double precision,
+	PRIMARY KEY(exp_date)
+);
+
+CREATE TABLE Rate(
+	time_stamp  timestamp	NOT NULL,
+	slope	    real	    NOT NULL,
+	PRIMARY KEY (time_stamp, slope),
+	FOREIGN KEY(time_stamp) REFERENCES Experiment(exp_date)
+);
+
+CREATE TABLE Graph_data(
+	time_stamp  timestamp	NOT NULL,
+	delay	double precision[] NOT NULL,
+	signal	double precision[] NOT NULL,
+	err		double precision[] NOT NULL,
+	PRIMARY KEY(time_stamp, delay, signal),
+	FOREIGN KEY(time_stamp) REFERENCES Experiment(exp_date)
+);
+
+CREATE TABLE Raw_data(
+	time_stamp          timestamp	NOT NULL,
+	delay		        double precision,
+	channel1_full	    double precision[],
+	channel1_first      double precision[],
+	channel1_second     double precision[],
+	channel2_full       double precision[],
+    channel2_filtered   double precision[],
+	PRIMARY KEY(time_stamp, channel1_full),
+	FOREIGN KEY(time_stamp) REFERENCES Experiment(exp_date)
+);
+
+CREATE VIEW Raw_Experiment as
+(SELECT *
+FROM Experiment, Raw_data
+WHERE Experiment.exp_date = Raw_data.time_stamp);
+
+CREATE VIEW Processed_Experiment as
+(SELECT *
+FROM Experiment, Graph_data
+WHERE Experiment.exp_date = Graph_data.time_stamp);
+
+CREATE VIEW Slope_of_Experiment as
+(SELECT Experiment.*, Rate.slope
+FROM Experiment, Rate
+WHERE Experiment.exp_date = Rate.time_stamp);
+
+
