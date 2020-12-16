@@ -3,7 +3,7 @@ import time
 import datetime
 import pandas as pd
 from gui import Ui_MainWindow
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore, QtGui, Qt
 from PyQt5.QtWidgets import QMessageBox, QFileDialog, QSizePolicy
 import sr245
 import dg535
@@ -72,7 +72,6 @@ class DAT(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.ui.saveGraphBtn.adjustSize()
-        #self.ui.saveDataBtn.adjustSize()
         self.ui.ShowLogGraph.adjustSize()
         self.ui.ShowRawData.adjustSize()
         self.ui.expReaction.adjustSize()
@@ -81,6 +80,10 @@ class DAT(QtWidgets.QMainWindow):
         self.ui.pressureLabel.adjustSize()
         self.ui.gpibAddr.adjustSize()
         self.ui.progressBar.setValue(0)
+
+
+        self.ui.loopLimit.setStyleSheet("QLineEdit { background: rgb(211, 211, 211); }")
+        self.isFixed = False
 
         self.x = []
         self.y = []
@@ -95,6 +98,7 @@ class DAT(QtWidgets.QMainWindow):
         self.temperature = None
         self.pressure = None
 
+        self.numLoops = None
         self.comPort = None
         self.gpibPort = None
         self.baseDelay = None
@@ -122,8 +126,8 @@ class DAT(QtWidgets.QMainWindow):
         self.ui.saveGraphBtn.clicked.connect(self.save_graph_data)
         self.ui.ShowRawData.toggled.connect(self.showRawGraph)
         self.ui.ShowLogGraph.toggled.connect(self.showGraph)
-
-        #self.ui.saveDataBtn.clicked.connect(self.showGraph)
+        self.ui.loopMode.toggled.connect(self.loopScan)
+        self.ui.autoMode.toggled.connect(self.dynamicScan)
 
     def submit_conditions(self):
         self.reaction = self.ui.reaction.text()
@@ -132,14 +136,24 @@ class DAT(QtWidgets.QMainWindow):
         self.pressure = int(self.ui.pressure.text())
         self.statusBar().showMessage('Experimental conditions saved')
 
+    def loopScan(self):
+        self.ui.loopLimit.setStyleSheet("QLineEdit { background: rgb(255, 255, 255); }")
+        self.ui.loopLimit.setReadOnly(False)
+        self.isFixed = True
+
+    def dynamicScan(self):
+        self.ui.loopLimit.setStyleSheet("QLineEdit { background: rgb(211, 211, 211); }")
+        self.ui.loopLimit.setReadOnly(True)
+        self.isFixed = False
+
     def submit_settings(self):
+        if self.isFixed:
+            self.numLoops = self.ui.loopLimit.currentText()
         self.comPort = self.ui.comPortList.currentText()
         self.gpibPort = self.ui.gpibAddrList.currentText() + '::' + self.ui.GPIB_List.currentText() + '::INSTR'
         self.baseDelay = float(self.ui.bdelay.text())
         self.delayInc = float(self.ui.delInc.text())
         self.scanPoints = int(self.ui.numPoints.text())
-        #print('Current values: \nCom Port: ', self.comPort, '\nGPIB Address: ', self.gpibPort, '\nBase Delay: ', self.baseDelay,
-        #      '\nDelay Increment: ', self.delayInc, '\nNumber of Points per Scan: ', self.scanPoints)
         self.statusBar().showMessage('Settings updated')
 
     def checkSettings(self):
@@ -196,6 +210,7 @@ class DAT(QtWidgets.QMainWindow):
         sleep_timer = 0.05 * n + 0.5
         progress = 0
         progInc = calc_progress(delay, self.delayInc)
+        count = 0
 
         #Make sure all data values from previous scans are clear
         self.clear_data()
@@ -206,6 +221,9 @@ class DAT(QtWidgets.QMainWindow):
 
         try:
             while True:
+                if self.isFixed and count >= self.numLoops:
+                    break
+
                 # Set progress bar display
                 self.pbar.setValue(progress)
 
@@ -245,7 +263,7 @@ class DAT(QtWidgets.QMainWindow):
                 avg_norm = average_list(normal_data)
 
                 # Stop the scan if 90% or more of the data has fallen below the cutoff point
-                if avg_norm <= (self.baseline * 1.2):
+                if not self.isFixed and avg_norm <= (self.baseline * 1.2):
                     break
 
                 # Add current delay value to x-axis values for plotting figures
@@ -279,6 +297,10 @@ class DAT(QtWidgets.QMainWindow):
                 print('\n\n')'''
                 delay += self.delayInc
                 progress += round(progInc)
+
+                #If in fixed loop mode, increment counter
+                if self.isFixed:
+                    count += 1
 
             #Reset delay to original base level
             dg535.set_delay(pulseGen, self.baseDelay)
