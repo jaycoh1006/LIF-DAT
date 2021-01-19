@@ -148,7 +148,7 @@ class DAT(QtWidgets.QMainWindow):
 
     def submit_settings(self):
         if self.isFixed:
-            self.numLoops = self.ui.loopLimit.currentText()
+            self.numLoops = int(self.ui.loopLimit.text())
         self.comPort = self.ui.comPortList.currentText()
         self.gpibPort = self.ui.gpibAddrList.currentText() + '::' + self.ui.GPIB_List.currentText() + '::INSTR'
         self.baseDelay = float(self.ui.bdelay.text())
@@ -329,9 +329,13 @@ class DAT(QtWidgets.QMainWindow):
         indexes = strip_large_error(self.error)
         if len(indexes) > 0:
             for index in indexes:
-                del self.x[index]
-                del self.y[index]
-                del self.error[index]
+                self.x[index] = ''
+                self.y[index] = ''
+                self.error[index] = ''
+
+            self.x = [elem for elem in self.x if elem != '']
+            self.y = [elem for elem in self.y if elem != '']
+            self.error = [elem for elem in self.error if elem != '']
 
     @QtCore.pyqtSlot(str)
     def error_popup(self, message):
