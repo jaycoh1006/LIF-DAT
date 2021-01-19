@@ -90,7 +90,8 @@ class DAT(QtWidgets.QMainWindow):
         self.y1 = []
         self.y2 = []
         self.y3 = []
-        self.error = []
+        self.dataErr = []
+        self.lnErr = []
 
         self.expDate = None
         self.reaction = None
@@ -183,7 +184,8 @@ class DAT(QtWidgets.QMainWindow):
         self.y1.clear()
         self.y2.clear()
         self.y3.clear()
-        self.error.clear()
+        self.dataErr.clear()
+        self.lnErr.clear()
 
     def run_scan(self):
         #First, check that the user has input the necessary settings before scanning
@@ -281,9 +283,10 @@ class DAT(QtWidgets.QMainWindow):
                 # add it to the y-axis for plotting figures
                 self.y.append(math.log(abs(avg_norm)))
 
-                # Get the error of the average data and add it to the error list
-                data_err = calc_error(normal_data)
-                self.error.append(data_err)
+                # Get the error of the average data (Ln_I) and add it to the error list
+                data_err, ln_err = calc_error(normal_data)
+                self.dataErr.append(data_err)
+                self.lnErr.append(ln_err)
 
                 elapsed_time = t1 - t0
                 '''print('DATA TAKEN WITH A DELAY TIME OF ' + str(delay))
@@ -315,7 +318,7 @@ class DAT(QtWidgets.QMainWindow):
             self.slope = get_slope(self.x, self.y)
 
             #Save the processed data to the database
-            database.save_graphDB(self.expDate, self.x, self.y, self.error, self.slope)
+            database.save_graphDB(self.expDate, self.x, self.y, self.lnErr, self.slope)
 
             #Display data visualization
             #self.map.plot(self.x, self.y, self.error, self.slope)
@@ -326,16 +329,17 @@ class DAT(QtWidgets.QMainWindow):
             self.error_popup(str(e))
 
     def final_processing(self):
-        indexes = strip_large_error(self.error)
+        indexes = strip_large_error(self.y3, self.dataErr)
         if len(indexes) > 0:
             for index in indexes:
                 self.x[index] = ''
                 self.y[index] = ''
-                self.error[index] = ''
+                self.lnErr[index] = ''
 
             self.x = [elem for elem in self.x if elem != '']
             self.y = [elem for elem in self.y if elem != '']
-            self.error = [elem for elem in self.error if elem != '']
+            self.lnErr = [elem for elem in self.lnErr if elem != '']
+
 
     @QtCore.pyqtSlot(str)
     def error_popup(self, message):
@@ -388,7 +392,7 @@ class DAT(QtWidgets.QMainWindow):
             self.error_popup(msg)
 
     def showGraph(self):
-        self.map.plot(self.x, self.y, self.error)
+        self.map.plot(self.x, self.y, self.lnErr)
         if self.slope:
             cut_slope = "Slope: {:.4f}".format(self.slope)
             self.ui.slopeLabel.setText(cut_slope)
