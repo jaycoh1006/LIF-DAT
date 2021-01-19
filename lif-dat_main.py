@@ -230,7 +230,7 @@ class DAT(QtWidgets.QMainWindow):
                 # Check that the delay time has not exceeded safe limits
                 if delay > 0.01:
                     self.delayWarning.connect(self.error_popup)
-                    self.delayWarning.emit('Delay time has exceeded 50ms. Scan terminated.')
+                    self.delayWarning.emit('Delay time has exceeded 10ms. Scan terminated.')
                     break
 
                 # Set delay time for pulse generator
