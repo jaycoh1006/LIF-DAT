@@ -208,7 +208,7 @@ class DAT(QtWidgets.QMainWindow):
 
         pulseGen = dg535.connect_pulse_gen(self.gpibPort)
         delay = self.baseDelay
-        n = self.scanPoints
+        n = self.scanPoints * 2
         sleep_timer = 0.05 * n + 0.5
         progress = 0
         progInc = calc_progress(delay, self.delayInc)
