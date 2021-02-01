@@ -22,10 +22,9 @@ def calc_log(data_list):
 def calc_error(data):
     #Calculate the error, i.e. ln(avg + std) - ln(avg - std)
     avg = average_list(data)
-    std_dev = np.std(data)
-    err = (math.log(abs(avg+std_dev)) - math.log(abs(avg-std_dev)))
-    err = err/2
-    return err
+    data_err = np.std(data)
+    ln_err = (math.log(abs(avg+data_err)) - math.log(abs(avg-data_err)))/2
+    return data_err, ln_err
 
 
 def normalize(chan1, chan2, num):
@@ -54,13 +53,18 @@ def get_slope(x, y):
     return slope
 
 
-def strip_large_error(errorVals):
+def strip_large_error(dataVals, errorVals):
     #Check each error value against the average and mark the index of aberrations for data removal
     #TODO:Confirm how large error should be in order to be removed
-    baseline = average_list(errorVals) * 1.5
+    #baseline = average_list(errorVals) * 1.5
     nums = []
-    for val in errorVals:
-        if val >= baseline:
-            nums.append(errorVals.index(val))
+    for data in dataVals:
+        ind = dataVals.index(data)
+        if errorVals[ind] > 0.4 * data:
+            nums.append(ind)
+
+    #for val in errorVals:
+        #if val >= baseline:
+            #nums.append(errorVals.index(val))
     return nums
 
